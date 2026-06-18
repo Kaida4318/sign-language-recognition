@@ -1,5 +1,6 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 from tensorflow.keras.models import load_model
 from PIL import Image
 
@@ -23,164 +24,198 @@ model = get_model()
 labels = [chr(i) for i in range(65, 91) if chr(i) not in ["J", "Z"]]
 
 # ----------------------------------------------------------------------
-# CSS — technical signal-display direction
+# CSS — warm, human-centered product design
 # ----------------------------------------------------------------------
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
     :root {
-        --bg: #0d0f0e;
-        --bg-panel: #131613;
-        --border: #232823;
-        --border-bright: #2f3a2f;
-        --text: #e6ebe6;
-        --text-dim: #6f7a6f;
-        --signal: #5fffaa;
-        --signal-dim: #1f5c43;
-        --signal-faint: rgba(95, 255, 170, 0.08);
+        --bg: #fafaf8;
+        --card: #ffffff;
+        --border: #eeeef2;
+        --ink: #1a1a2e;
+        --slate: #6b7280;
+        --indigo: #6366f1;
+        --indigo-soft: #eef0fe;
+        --indigo-deep: #4338ca;
+        --coral: #ff8b6b;
+        --coral-soft: #fff1ec;
     }
 
     html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], .stApp {
         background-color: var(--bg) !important;
     }
-
     .stApp, .stApp p, .stApp span, .stApp label {
         font-family: 'Inter', sans-serif;
-        color: var(--text);
+        color: var(--ink);
     }
-    .mono { font-family: 'JetBrains Mono', monospace; }
-
-    .block-container { padding-top: 2.4rem; padding-bottom: 3rem; max-width: 1180px; }
+    .block-container { padding-top: 1.5rem; padding-bottom: 3rem; max-width: 1180px; }
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     [data-testid="stHeader"] { background: transparent; height: 0; min-height: 0; }
     [data-testid="stToolbar"] { display: none; }
 
-    /* ---------- Header strip ---------- */
-    .topline {
-        display: flex; justify-content: space-between; align-items: center;
-        border-bottom: 1px solid var(--border); padding-bottom: 1.1rem; margin-bottom: 2rem;
+    /* ---------- Hero ---------- */
+    .hero-wrap {
+        background: linear-gradient(135deg, var(--indigo-soft) 0%, var(--coral-soft) 100%);
+        border-radius: 32px;
+        padding: 3.4rem 3rem;
+        margin-bottom: 2.4rem;
+        position: relative;
+        overflow: hidden;
     }
-    .topline-id {
-        font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--signal);
-        letter-spacing: 0.05em;
+    .hero-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: rgba(255,255,255,0.7); color: var(--indigo-deep);
+        font-size: 0.8rem; font-weight: 600; padding: 0.45rem 1rem;
+        border-radius: 99px; margin-bottom: 1.3rem;
     }
-    .topline-status {
-        font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-dim);
-        display: flex; align-items: center; gap: 6px;
-    }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--signal); display: inline-block; }
-
     .hero-title {
-        font-family: 'JetBrains Mono', monospace; font-size: 2.1rem; font-weight: 700;
-        line-height: 1.25; margin-bottom: 0.9rem; color: var(--text); letter-spacing: -0.01em;
+        font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2.9rem; font-weight: 800;
+        line-height: 1.12; margin-bottom: 1rem; color: var(--ink); max-width: 680px;
     }
-    .hero-sub { font-size: 0.98rem; color: var(--text-dim); max-width: 640px; line-height: 1.65; margin-bottom: 2.2rem; }
+    .hero-sub {
+        font-size: 1.08rem; color: var(--slate); max-width: 560px; line-height: 1.65; margin-bottom: 1.8rem;
+    }
+    .hero-cta {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: var(--indigo); color: #ffffff; font-weight: 600; font-size: 0.95rem;
+        padding: 0.8rem 1.6rem; border-radius: 14px;
+    }
+    .hero-illustration {
+        position: absolute; right: 2.5rem; top: 50%; transform: translateY(-50%);
+        font-size: 6rem; opacity: 0.9;
+    }
 
-    /* ---------- Containers as panels ---------- */
+    /* ---------- Section labels ---------- */
+    .section-eyebrow {
+        font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.78rem; letter-spacing: 0.06em;
+        text-transform: uppercase; color: var(--indigo); font-weight: 700; margin-bottom: 0.5rem;
+    }
+    .section-title {
+        font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.5rem; font-weight: 700;
+        color: var(--ink); margin-bottom: 1.6rem;
+    }
+
+    /* ---------- Cards via real containers ---------- */
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background: var(--bg-panel) !important;
-        border-radius: 4px !important;
+        background: var(--card) !important;
+        border-radius: 24px !important;
         border: 1px solid var(--border) !important;
+        box-shadow: 0 4px 24px rgba(20, 20, 50, 0.04);
     }
 
-    .panel-label {
-        font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.1em;
-        text-transform: uppercase; color: var(--text-dim); font-weight: 500; margin-bottom: 1rem;
-        display: flex; align-items: center; gap: 8px;
+    .card-kicker {
+        display: flex; align-items: center; gap: 10px; margin-bottom: 1.2rem;
     }
-    .panel-label::before { content: "//"; color: var(--signal-dim); }
+    .card-icon {
+        width: 40px; height: 40px; border-radius: 12px; background: var(--indigo-soft);
+        display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+    }
+    .card-kicker-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 1.05rem; }
 
-    /* Uploader: keep native button, restyle to fit terminal aesthetic */
+    /* Uploader */
     [data-testid="stFileUploaderDropzone"] {
-        background: var(--bg) !important;
-        border: 1px dashed var(--border-bright) !important;
-        border-radius: 2px !important;
+        background: #fbfbfd !important;
+        border: 1.5px dashed #d8d9f0 !important;
+        border-radius: 18px !important;
+        padding: 0.6rem !important;
     }
     [data-testid="stFileUploaderDropzone"] button {
-        background: transparent !important;
-        color: var(--signal) !important;
-        border: 1px solid var(--signal-dim) !important;
-        border-radius: 2px !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        font-weight: 500 !important;
+        background: var(--indigo) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
     }
-    [data-testid="stFileUploaderDropzoneInstructions"] span { color: var(--text) !important; }
-    [data-testid="stFileUploaderDropzoneInstructions"] small { color: var(--text-dim) !important; }
+    [data-testid="stFileUploaderDropzoneInstructions"] span { color: var(--ink) !important; font-weight: 500 !important; }
+    [data-testid="stFileUploaderDropzoneInstructions"] small { color: var(--slate) !important; }
     [data-testid="stFileUploaderFile"] button { display: none !important; }
     [data-testid="stFileUploaderDeleteBtn"] { display: inline-flex !important; }
+    [data-testid="stImage"] img { border-radius: 16px; margin-top: 0.9rem; }
 
-    [data-testid="stImage"] img { border-radius: 2px; border: 1px solid var(--border); margin-top: 0.8rem; }
-
-    /* ---------- Result readout ---------- */
-    .readout-empty {
+    /* ---------- Result ---------- */
+    .result-empty {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        color: var(--text-dim); font-size: 0.85rem; text-align: center; gap: 0.7rem; padding: 2.6rem 1rem;
-        font-family: 'JetBrains Mono', monospace;
+        color: var(--slate); font-size: 0.95rem; text-align: center; gap: 0.9rem; padding: 2.6rem 1rem;
+    }
+    .result-empty-icon {
+        width: 60px; height: 60px; border-radius: 50%; background: var(--indigo-soft);
+        display: flex; align-items: center; justify-content: center; font-size: 26px;
     }
 
-    .readout-main { display: flex; align-items: center; gap: 1.8rem; padding: 0.4rem 0 1.4rem 0; }
-    .readout-letter {
-        font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 5.4rem; line-height: 1;
-        color: var(--signal); flex-shrink: 0;
-        text-shadow: 0 0 24px var(--signal-faint);
+    .result-top { display: flex; align-items: center; gap: 1.8rem; padding: 0.4rem 0 1rem 0; }
+    .letter-ring-wrap { position: relative; width: 128px; height: 128px; flex-shrink: 0; }
+    .letter-ring-bg {
+        position: absolute; inset: 0; border-radius: 50%;
+        background: conic-gradient(var(--indigo) calc(var(--pct) * 1%), var(--border) 0);
     }
-    .readout-meta-label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.4rem; }
-    .readout-conf { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 600; color: var(--text); margin-bottom: 0.6rem; }
-    .readout-track { background: var(--border); height: 4px; width: 100%; }
-    .readout-fill { background: var(--signal); height: 100%; }
-
-    /* Full 24-class waveform */
-    .wave-title { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.08em; color: var(--text-dim); margin: 0.4rem 0 0.8rem 0; }
-    .wave-row { display: flex; align-items: center; gap: 8px; padding: 1.5px 0; }
-    .wave-label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text-dim); width: 14px; flex-shrink: 0; }
-    .wave-label.active { color: var(--signal); font-weight: 700; }
-    .wave-track { flex: 1; background: var(--border); height: 9px; position: relative; overflow: hidden; }
-    .wave-fill { background: var(--signal-dim); height: 100%; }
-    .wave-fill.active { background: var(--signal); }
-    .wave-pct { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text-dim); width: 38px; text-align: right; flex-shrink: 0; }
-
-    /* ---------- Stats ---------- */
-    .section-label {
-        font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
-        color: var(--text-dim); font-weight: 500; margin: 2.6rem 0 1rem 0; display: flex; align-items: center; gap: 8px;
+    .letter-ring-inner {
+        position: absolute; inset: 8px; border-radius: 50%; background: var(--card);
+        display: flex; align-items: center; justify-content: center;
     }
-    .section-label::before { content: "//"; color: var(--signal-dim); }
-    .stat-number { font-family: 'JetBrains Mono', monospace; font-size: 1.7rem; font-weight: 700; color: var(--signal); }
-    .stat-label { font-size: 0.78rem; color: var(--text-dim); margin-top: 0.3rem; line-height: 1.4; }
+    .letter-text {
+        font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 3rem; color: var(--indigo-deep);
+    }
+    .result-meta-label { font-size: 0.85rem; color: var(--slate); margin-bottom: 0.3rem; }
+    .result-conf { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.6rem; font-weight: 700; color: var(--ink); margin-bottom: 0.5rem; }
+    .result-explain {
+        background: var(--indigo-soft); border-radius: 14px; padding: 0.9rem 1.1rem;
+        font-size: 0.88rem; color: var(--indigo-deep); line-height: 1.5;
+    }
+
+    /* ---------- Stats grid ---------- */
+    .stat-number { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--indigo-deep); }
+    .stat-label { font-size: 0.82rem; color: var(--slate); margin-top: 0.3rem; line-height: 1.4; }
+
+    /* ---------- Footer ---------- */
+    .footer-wrap {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 1.8rem 0 0.4rem 0; border-top: 1px solid var(--border); margin-top: 1rem;
+        font-size: 0.85rem; color: var(--slate);
+    }
+    .footer-link { color: var(--indigo-deep); font-weight: 600; text-decoration: none; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 # ----------------------------------------------------------------------
-# Header / hero
+# Hero section
 # ----------------------------------------------------------------------
 st.markdown(
     """
-    <div class="topline">
-        <div class="topline-id">SIGN-RECOGNITION // CNN-CLASSIFIER</div>
-        <div class="topline-status"><span class="dot"></span> MODEL LOADED</div>
+    <div class="hero-wrap">
+        <div class="hero-badge">🤟 AI for accessibility</div>
+        <div class="hero-title">Bridging the gap between sign language and everyone else</div>
+        <div class="hero-sub">Upload a photo of a hand sign and watch a neural network read it in real time —
+        trained on 27,000+ images to recognize the ASL alphabet with 95.7% accuracy.</div>
+        <div class="hero-cta">Try it below ↓</div>
+        <div class="hero-illustration">🤚</div>
     </div>
-    <div class="hero-title">ASL fingerspelling classifier</div>
-    <div class="hero-sub">A convolutional neural network trained on 27,455 hand-sign images, recognizing
-    24 static letters of the ASL alphabet from a single photo. Upload one below to run inference.</div>
     """,
     unsafe_allow_html=True,
 )
 
 # ----------------------------------------------------------------------
-# Work area
+# Recognition workspace
 # ----------------------------------------------------------------------
-col_left, col_right = st.columns([1, 1.2], gap="medium")
+st.markdown('<div class="section-eyebrow">Recognition workspace</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">Upload a hand sign to get started</div>', unsafe_allow_html=True)
+
+col_left, col_right = st.columns([1, 1], gap="medium")
 
 with col_left:
     with st.container(border=True):
-        st.markdown('<div class="panel-label">INPUT</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="card-kicker"><div class="card-icon">📷</div>'
+            '<div class="card-kicker-title">Your photo</div></div>',
+            unsafe_allow_html=True,
+        )
         uploaded_file = st.file_uploader(
-            "Drop a hand sign photo here, or click to browse",
+            "Drag and drop a hand sign photo, or click to browse",
             type=["jpg", "jpeg", "png"],
             label_visibility="visible",
         )
@@ -189,69 +224,79 @@ with col_left:
             st.image(image, use_container_width=True)
         else:
             st.markdown(
-                '<div class="readout-empty">[ NO INPUT IMAGE ]<br>awaiting upload</div>',
+                '<div class="result-empty"><div class="result-empty-icon">🖼️</div>'
+                "Your photo will appear here once uploaded</div>",
                 unsafe_allow_html=True,
             )
 
 with col_right:
     with st.container(border=True):
-        st.markdown('<div class="panel-label">PREDICTION</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="card-kicker"><div class="card-icon">✨</div>'
+            '<div class="card-kicker-title">Prediction</div></div>',
+            unsafe_allow_html=True,
+        )
 
         if uploaded_file is not None:
             gray = image.convert("L").resize((28, 28))
             img_array = np.array(gray) / 255.0
             img_array = img_array.reshape(1, 28, 28, 1)
 
-            prediction = model.predict(img_array, verbose=0)[0]
+            with st.spinner("Analyzing hand shape..."):
+                prediction = model.predict(img_array, verbose=0)[0]
             predicted_class = int(np.argmax(prediction))
             confidence = float(prediction[predicted_class] * 100)
             letter = labels[predicted_class]
 
+            if confidence >= 80:
+                explain = f"Strong match. The model is highly confident this shows the letter {letter}."
+            elif confidence >= 50:
+                explain = f"Likely a match for {letter}, though the hand shape shares some features with similar letters."
+            else:
+                explain = f"Low confidence. This may not be a clear ASL hand sign, or the photo could be unclear."
+
             st.markdown(
                 f"""
-                <div class="readout-main">
-                    <div class="readout-letter">{letter}</div>
+                <div class="result-top">
+                    <div class="letter-ring-wrap">
+                        <div class="letter-ring-bg" style="--pct:{confidence:.0f};"></div>
+                        <div class="letter-ring-inner"><div class="letter-text">{letter}</div></div>
+                    </div>
                     <div style="flex:1;">
-                        <div class="readout-meta-label">CONFIDENCE</div>
-                        <div class="readout-conf">{confidence:.1f}%</div>
-                        <div class="readout-track"><div class="readout-fill" style="width:{confidence:.1f}%;"></div></div>
+                        <div class="result-meta-label">Predicted letter</div>
+                        <div class="result-conf">{confidence:.1f}% confident</div>
                     </div>
                 </div>
+                <div class="result-explain">💡 {explain}</div>
                 """,
                 unsafe_allow_html=True,
             )
 
-            # Full 24-class probability waveform, sorted by probability descending
-            order = np.argsort(prediction)[::-1]
-            st.markdown('<div class="wave-title">FULL DISTRIBUTION — ALL 24 CLASSES</div>', unsafe_allow_html=True)
-            rows_html = ""
-            for idx in order:
-                pct = float(prediction[idx] * 100)
-                is_top = idx == predicted_class
-                rows_html += f"""
-                <div class="wave-row">
-                    <div class="wave-label{' active' if is_top else ''}">{labels[idx]}</div>
-                    <div class="wave-track"><div class="wave-fill{' active' if is_top else ''}" style="width:{max(pct, 0.5):.1f}%;"></div></div>
-                    <div class="wave-pct">{pct:.1f}%</div>
-                </div>
-                """
-            st.markdown(f'<div>{rows_html}</div>', unsafe_allow_html=True)
+            # Probability chart for top candidates
+            order = np.argsort(prediction)[::-1][:6]
+            chart_df = pd.DataFrame(
+                {"Letter": [labels[i] for i in order], "Probability": [float(prediction[i] * 100) for i in order]}
+            ).set_index("Letter")
+            st.markdown('<div style="margin-top:1.4rem; font-size:0.85rem; color:#6b7280; font-weight:600;">Top candidates</div>', unsafe_allow_html=True)
+            st.bar_chart(chart_df, color="#6366F1", height=180)
         else:
             st.markdown(
-                '<div class="readout-empty">[ STANDBY ]<br>upload an image to run inference</div>',
+                '<div class="result-empty"><div class="result-empty-icon">🔮</div>'
+                "Upload a photo on the left to see the predicted letter</div>",
                 unsafe_allow_html=True,
             )
 
 # ----------------------------------------------------------------------
-# Model stats
+# About the model
 # ----------------------------------------------------------------------
-st.markdown('<div class="section-label">MODEL METRICS</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-eyebrow" style="margin-top:2.6rem;">About the model</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">A convolutional neural network, trained from scratch</div>', unsafe_allow_html=True)
 
 stat_cols = st.columns(4)
 stats = [
     ("95.7%", "Test accuracy (CNN)"),
-    ("72.7%", "Test accuracy, baseline dense network"),
-    ("24", "Classes — excludes J, Z (motion signs)"),
+    ("72.7%", "Baseline dense network accuracy"),
+    ("24", "Letters recognized — excludes J & Z"),
     ("27,455", "Training images"),
 ]
 for col, (number, label) in zip(stat_cols, stats):
@@ -261,3 +306,35 @@ for col, (number, label) in zip(stat_cols, stats):
                 f'<div class="stat-number">{number}</div><div class="stat-label">{label}</div>',
                 unsafe_allow_html=True,
             )
+
+with st.container(border=True):
+    st.markdown(
+        '<div class="card-kicker"><div class="card-icon">🧠</div>'
+        '<div class="card-kicker-title">Architecture summary</div></div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <p style="color:#6b7280; line-height:1.7; font-size:0.92rem;">
+        Two convolutional layers (32 and 64 filters) extract shape patterns from each image, each followed
+        by max-pooling to reduce size while keeping the strongest signal. A dense layer with dropout combines
+        these features before a final 24-way softmax layer outputs a probability for each letter. Compared to
+        a plain feedforward network, this architecture generalizes far better to new images — visible directly
+        in the accuracy gap above.
+        </p>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# ----------------------------------------------------------------------
+# Footer
+# ----------------------------------------------------------------------
+st.markdown(
+    """
+    <div class="footer-wrap">
+        <div>Built with TensorFlow &amp; Streamlit · Muhammad Zubairu Rabiu</div>
+        <a class="footer-link" href="https://github.com/Kaida4318" target="_blank">View on GitHub →</a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
